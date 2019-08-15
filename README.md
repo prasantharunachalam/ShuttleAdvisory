@@ -25,3 +25,10 @@ GET Request:
 http://localhost:8080/shuttles/{RouteName}/{Direction}/{StopName}/duration
 
 http://localhost:8080/shuttles/METRO Green Line/EAST/Prospect Park/duration?access_token=xxxxx-xxxx-xxxx-xxx-xxxxxx
+
+HTTP Responses:
+
+200 - Success
+400 - Bad Request for UserInput
+401 - Unauthorized
+500 - Server error

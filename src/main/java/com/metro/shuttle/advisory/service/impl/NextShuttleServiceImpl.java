@@ -65,19 +65,18 @@ public class NextShuttleServiceImpl implements NextShuttleService {
 	}
 
 	@Override
-	@HystrixCommand(commandKey = "actual-routeid-stopname-direction-by-userinputs", fallbackMethod = "getFallBackActualRouteNumberAndStopNameForUserInputsWithDirection")
 	public NextShuttleRequest getActualRouteNumberAndStopNameForUserInputsWithDirection(final String route,
 			final String direction, final String stopName) {
-		NextShuttleRequest nextShuttleRequest = new NextShuttleRequest();
+		final NextShuttleRequest nextShuttleRequest = new NextShuttleRequest();
 
-		String actualRouteId = validateAndReturnRouteIdByRouteSearchString(route);
+		final String actualRouteId = validateAndReturnRouteIdByRouteSearchString(route);
 		nextShuttleRequest.setRoute(actualRouteId);
 
-		String actualDirectionId = validateAndReturnDirectionIdByRouteAndDirectionSearchString(route, direction,
+		final String actualDirectionId = validateAndReturnDirectionIdByRouteAndDirectionSearchString(route, direction,
 				nextShuttleRequest.getRoute());
 		nextShuttleRequest.setDirection(actualDirectionId);
 
-		String actualStopId = validateAndReturnStopIdByRouteSearchString(route, direction,
+		final String actualStopId = validateAndReturnStopIdByRouteSearchString(route, direction,
 				nextShuttleRequest.getDirection(), nextShuttleRequest.getRoute(), stopName);
 		nextShuttleRequest.setStopName(actualStopId);
 		return nextShuttleRequest;
