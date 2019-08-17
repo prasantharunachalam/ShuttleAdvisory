@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
+import org.springframework.cloud.netflix.hystrix.dashboard.EnableHystrixDashboard;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
@@ -28,6 +29,7 @@ import com.metro.shuttle.advisory.security.service.UserService;
 @EnableJpaRepositories("com.metro.shuttle.advisory.security.jpa.repository")
 @EntityScan("com.metro.shuttle.advisory.security.entity")
 @EnableCircuitBreaker
+@EnableHystrixDashboard
 public class ShuttleAdvisoryApplication {
 
 	public static void main(String[] args) {

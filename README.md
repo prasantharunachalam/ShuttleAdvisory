@@ -4,6 +4,13 @@ This is a microservice that gives the duration for next shuttle by leveraging me
 
 This is secured by oauth2 and is fault tolerant.
 
+Log into H2 database console to check the user roles who have access as below:
+
+http://localhost:8080/h2-console
+
+Enter JDBC URL as jdbc:h2:mem:testdb
+
+
 Get the access token by below steps:
 
 POST Request:

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.metro.shuttle.advisory.dto.MetroTimePointDepartureResponse;
 import com.metro.shuttle.advisory.dto.NextShuttleRequest;
 import com.metro.shuttle.advisory.dto.NextShuttleResponse;
-import com.metro.shuttle.advisory.service.NextShuttleService;
+import com.metro.shuttle.advisory.service.ShuttleService;
 import com.metro.shuttle.advisory.validator.Direction;
 import com.metro.shuttle.advisory.validator.Route;
 import com.metro.shuttle.advisory.validator.Stop;
@@ -26,7 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ShuttleAdvisoryResource {
 
 	@Autowired
-	private NextShuttleService nextShuttleService;
+	private ShuttleService nextShuttleService;
 
 	@Value(value = "${minneapolis.timezone.id}")
 	private String zoneId;

@@ -3,17 +3,13 @@ package com.metro.shuttle.advisory.service.impl;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.validation.ConstraintViolationException;
 
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -23,82 +19,66 @@ import com.metro.shuttle.advisory.dto.MetroRoutesResponse;
 import com.metro.shuttle.advisory.dto.MetroTimePointDepartureResponse;
 import com.metro.shuttle.advisory.dto.NextShuttleRequest;
 import com.metro.shuttle.advisory.dto.TextValuePairResponse;
-import com.metro.shuttle.advisory.integration.IntegrationService;
-import com.metro.shuttle.advisory.service.NextShuttleService;
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.metro.shuttle.advisory.service.MetroTransitService;
+import com.metro.shuttle.advisory.service.ShuttleService;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class NextShuttleServiceImpl implements NextShuttleService {
+public class ShuttleServiceImpl implements ShuttleService {
 
 	@Autowired
-	private IntegrationService integrationService;
-
-	@Value(value = "${metrotransit.nexttrip.timepoint.departure.url}")
-	private String metroTransitUrlForTimePointDeparture;
-
-	@Value(value = "${metrotransit.nexttrip.routes.url}")
-	private String metroTransitUrlForRoutes;
-
-	@Value(value = "${metrotransit.nexttrip.routes.directions.url}")
-	private String metroTransitUrlForRouteDirections;
-
-	@Value(value = "${metrotransit.nexttrip.routes.stops.url}")
-	private String metroTransitUrlForRouteStops;
+	private MetroTransitService metroTransitService;
 
 	private final Map<String, String> directionLookUp = ImmutableMap.of("SOUTH", "1", "EAST", "2", "WEST", "3", "NORTH",
 			"4");
-
-	private String replacePathParamsWithActuals(String url, final String route, final String direction,
-			final String stopName) {
-		if (StringUtils.isNotEmpty(url)) {
-			if (url.contains("{ROUTE}"))
-				url = url.replace("{ROUTE}", route);
-			if (url.contains("{DIRECTION}"))
-				url = url.replace("{DIRECTION}", direction);
-			if (url.contains("{STOP}"))
-				url = url.replace("{STOP}", stopName);
-		}
-		return url;
-	}
+	
+	private final static String NOT_AVAILABLE = "NA";
 
 	@Override
 	public NextShuttleRequest getActualRouteNumberAndStopNameForUserInputsWithDirection(final String route,
 			final String direction, final String stopName) {
 		final NextShuttleRequest nextShuttleRequest = new NextShuttleRequest();
-
+		
 		final String actualRouteId = validateAndReturnRouteIdByRouteSearchString(route);
+		if(NOT_AVAILABLE.equals(actualRouteId)) {
+			setCircuitInOpenState(nextShuttleRequest);
+			return nextShuttleRequest;
+		}
 		nextShuttleRequest.setRoute(actualRouteId);
+//		nextShuttleRequest.setRoute("902");
 
 		final String actualDirectionId = validateAndReturnDirectionIdByRouteAndDirectionSearchString(route, direction,
 				nextShuttleRequest.getRoute());
+		if(NOT_AVAILABLE.equals(actualDirectionId)) {
+			setCircuitInOpenState(nextShuttleRequest);
+			return nextShuttleRequest;
+		}
 		nextShuttleRequest.setDirection(actualDirectionId);
+//		nextShuttleRequest.setDirection("2");
 
 		final String actualStopId = validateAndReturnStopIdByRouteSearchString(route, direction,
 				nextShuttleRequest.getDirection(), nextShuttleRequest.getRoute(), stopName);
+		if(NOT_AVAILABLE.equals(actualStopId)) {
+			setCircuitInOpenState(nextShuttleRequest);
+			return nextShuttleRequest;
+		}
 		nextShuttleRequest.setStopName(actualStopId);
 		return nextShuttleRequest;
 	}
-
-	public NextShuttleRequest getFallBackActualRouteNumberAndStopNameForUserInputsWithDirection(final String route,
-			final String direction, final String stopName) {
-		final NextShuttleRequest nextShuttleRequest = new NextShuttleRequest();
+	
+	private void setCircuitInOpenState(final NextShuttleRequest nextShuttleRequest ) {
 		nextShuttleRequest.setCircuitOpen(true);
-		log.info("getFallBackActualRouteNumberAndStopNameForUserInputsWithDirection");
-		return nextShuttleRequest;
+		log.info("setCircuitInOpenState");
 	}
 
 	@Override
 	public String validateAndReturnRouteIdByRouteSearchString(final String routeSearchString) {
 		// get routes
-		final ResponseEntity<List<MetroRoutesResponse>> metroRoutesResponseEntity = integrationService
-				.invokeExtenalService(metroTransitUrlForRoutes, HttpMethod.GET,
-						integrationService
-								.createHttpEntityWithHeaders(Collections.singletonList(MediaType.APPLICATION_JSON)),
-						new ParameterizedTypeReference<List<MetroRoutesResponse>>() {
-						});
+		final ResponseEntity<List<MetroRoutesResponse>> metroRoutesResponseEntity = metroTransitService.getRouteIdByRouteSearchString();
+		if(Objects.isNull(metroRoutesResponseEntity))
+			return NOT_AVAILABLE;
 		final List<MetroRoutesResponse> metroRoutesResponseList = metroRoutesResponseEntity.getBody();
 		Optional<MetroRoutesResponse> obj = metroRoutesResponseList.stream().filter(routeItem -> {
 			return routeItem.getDescription().contains(routeSearchString);
@@ -114,14 +94,9 @@ public class NextShuttleServiceImpl implements NextShuttleService {
 	public String validateAndReturnDirectionIdByRouteAndDirectionSearchString(final String routeSearchString,
 			final String directionSearchString, final String actualRouteId) {
 		// get directions
-		final ResponseEntity<List<TextValuePairResponse>> routeDirectionsResponseEntity = integrationService
-				.invokeExtenalService(
-						replacePathParamsWithActuals(metroTransitUrlForRouteDirections, actualRouteId, null, null),
-						HttpMethod.GET,
-						integrationService
-								.createHttpEntityWithHeaders(Collections.singletonList(MediaType.APPLICATION_JSON)),
-						new ParameterizedTypeReference<List<TextValuePairResponse>>() {
-						});
+		final ResponseEntity<List<TextValuePairResponse>> routeDirectionsResponseEntity = metroTransitService.getDirectionIdByRouteAndDirectionSearchString(actualRouteId);
+		if(Objects.isNull(routeDirectionsResponseEntity))
+			return NOT_AVAILABLE;
 		List<TextValuePairResponse> routeDirectionsResponseList = routeDirectionsResponseEntity.getBody();
 		if (!CollectionUtils.isEmpty(routeDirectionsResponseList))
 			routeDirectionsResponseList = routeDirectionsResponseList.stream().filter(item -> {
@@ -136,20 +111,14 @@ public class NextShuttleServiceImpl implements NextShuttleService {
 					"Direction is not applicable for the Route Name [[" + routeSearchString + "]].", null);
 		return directionLookUp.get(directionSearchString.toUpperCase());
 	}
-
+	
 	@Override
 	public String validateAndReturnStopIdByRouteSearchString(final String routeSearchString,
 			final String directionSearchString, final String actualDirectionId, final String actualRouteId,
 			final String stopNameSearchString) {
-		final ResponseEntity<List<TextValuePairResponse>> metroRouteStopResponseEntity = integrationService
-				.invokeExtenalService(
-						replacePathParamsWithActuals(metroTransitUrlForRouteStops, actualRouteId, actualDirectionId,
-								null),
-						HttpMethod.GET,
-						integrationService
-								.createHttpEntityWithHeaders(Collections.singletonList(MediaType.APPLICATION_JSON)),
-						new ParameterizedTypeReference<List<TextValuePairResponse>>() {
-						});
+		final ResponseEntity<List<TextValuePairResponse>> metroRouteStopResponseEntity = metroTransitService.getStopIdByRouteSearchString(actualDirectionId, actualRouteId);
+		if(Objects.isNull(metroRouteStopResponseEntity))
+			return NOT_AVAILABLE;
 		final List<TextValuePairResponse> metroRouteStopResponseList = metroRouteStopResponseEntity.getBody();
 		if (CollectionUtils.isEmpty(metroRouteStopResponseList))
 			throw new ConstraintViolationException("StopName is not applicable for the Route Name [["
@@ -165,19 +134,13 @@ public class NextShuttleServiceImpl implements NextShuttleService {
 						+ routeSearchString + "]] and Direction [[" + directionSearchString + "]].", null);
 		}
 	}
-
+	
 	@Override
-	@HystrixCommand(commandKey = "nextshuttle-duration-by-route-direction-stop", fallbackMethod = "retrieveFallBackTimeDurationForNextShuttleByRouteAndDirectionAndStop")
 	public MetroTimePointDepartureResponse retrieveTimeDurationForNextShuttleByRouteAndDirectionAndStop(
 			final NextShuttleRequest nextShuttleRequest) {
-		final ResponseEntity<List<MetroTimePointDepartureResponse>> response = integrationService.invokeExtenalService(
-				replacePathParamsWithActuals(metroTransitUrlForTimePointDeparture, nextShuttleRequest.getRoute(),
-						nextShuttleRequest.getDirection(), nextShuttleRequest.getStopName()),
-				HttpMethod.GET,
-				integrationService.createHttpEntityWithHeaders(Collections.singletonList(MediaType.APPLICATION_JSON)),
-				new ParameterizedTypeReference<List<MetroTimePointDepartureResponse>>() {
-				});
-
+		final ResponseEntity<List<MetroTimePointDepartureResponse>> response = metroTransitService.getTimeDurationForNextShuttleByRouteAndDirectionAndStop(nextShuttleRequest);
+		if(Objects.isNull(response))
+			retrieveDefaultDurationForNextShuttleByRouteAndDirectionAndStop(nextShuttleRequest);
 		log.info("Result - status (" + response.getStatusCode() + ") has body: " + response.hasBody());
 		final List<MetroTimePointDepartureResponse> list = response.getBody();
 		Collections.sort(list);
@@ -185,7 +148,7 @@ public class NextShuttleServiceImpl implements NextShuttleService {
 		return list.get(0);
 	}
 
-	public MetroTimePointDepartureResponse retrieveFallBackTimeDurationForNextShuttleByRouteAndDirectionAndStop(
+	private MetroTimePointDepartureResponse retrieveDefaultDurationForNextShuttleByRouteAndDirectionAndStop(
 			final NextShuttleRequest nextShuttleRequest) {
 		final MetroTimePointDepartureResponse defaultResponse = new MetroTimePointDepartureResponse();
 		defaultResponse.setCircuitOpen(true);
