@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import lombok.extern.slf4j.Slf4j;
+
 @ControllerAdvice
+@Slf4j
 public class ShuttleAdvisoryExceptionHandler extends ResponseEntityExceptionHandler {
-//    @ExceptionHandler(value = { ConstraintViolationException.class })
 	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
 	public String handle(ConstraintViolationException e) {
 		Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
@@ -28,6 +30,7 @@ public class ShuttleAdvisoryExceptionHandler extends ResponseEntityExceptionHand
 
 	@ExceptionHandler(ConstraintViolationException.class)
 	public void constraintViolationException(HttpServletResponse response) throws IOException {
+		log.info("Exiting !!! Constraint Violation Found in UserInput");
 		response.sendError(HttpStatus.BAD_REQUEST.value());
 	}
 }
