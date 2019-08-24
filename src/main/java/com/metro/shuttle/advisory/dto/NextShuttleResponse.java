@@ -26,6 +26,9 @@ public class NextShuttleResponse {
 	private static final Pattern pattern = Pattern.compile("(?<=Date\\()(.*)(?=\\))");
 	private static final String SEPARATOR = "-";
 	private static final String PAST_CURRENT_TIME = "Past CurrentTime";
+	private static final String DUE_TIME = "Due";
+	private static final String DUE_MINUTE = "Arriving within a Minute";
+	private static final String DUE_SECOND = "Arriving in Few Seconds";
 
 	@JsonIgnore
 	private long numberOfMinutes;
@@ -42,14 +45,18 @@ public class NextShuttleResponse {
 	private String advisoryMessage;
 
 	public String getDurationInMinutesForArrival() {
+		if(DUE_TIME.equalsIgnoreCase(arrivalTime))
+			return DUE_MINUTE;
 		if (numberOfMinutes != 0)
 			durationInMinutesForArrival = numberOfMinutes + SPACE + MINUTES;
 		else if (numberOfMinutes < 0)
 			durationInMinutesForArrival = PAST_CURRENT_TIME + SEPARATOR + numberOfMinutes + SPACE + MINUTES;
-		return durationInMinutesForArrival == null ? PAST_CURRENT_TIME : durationInMinutesForArrival;
+		return durationInMinutesForArrival == null  ? PAST_CURRENT_TIME : durationInMinutesForArrival;
 	}
 
 	public String getDurationInSecondsForArrival() {
+		if(DUE_TIME.equalsIgnoreCase(arrivalTime))
+			return DUE_SECOND;		
 		if (numberOfSeconds != 0)
 			durationInSecondsForArrival = numberOfSeconds + SPACE + SECONDS;
 		else if (numberOfSeconds < 0)
