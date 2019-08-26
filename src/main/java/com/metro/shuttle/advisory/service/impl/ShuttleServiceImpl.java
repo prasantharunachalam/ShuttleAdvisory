@@ -41,7 +41,7 @@ public class ShuttleServiceImpl implements ShuttleService {
 			final String direction, final String stopName) {
 		final NextShuttleRequest nextShuttleRequest = new NextShuttleRequest();
 		
-		final String actualRouteId = validateAndReturnRouteIdByRouteSearchString(route);
+		final String actualRouteId = validateAndReturnRouteIdByRouteSearchString(route, nextShuttleRequest);
 		if(NOT_AVAILABLE.equals(actualRouteId)) {
 			setCircuitInOpenState(nextShuttleRequest);
 			return nextShuttleRequest;
@@ -50,7 +50,7 @@ public class ShuttleServiceImpl implements ShuttleService {
 //		nextShuttleRequest.setRoute("902");
 
 		final String actualDirectionId = validateAndReturnDirectionIdByRouteAndDirectionSearchString(route, direction,
-				nextShuttleRequest.getRoute());
+				nextShuttleRequest.getRoute(), nextShuttleRequest);
 		if(NOT_AVAILABLE.equals(actualDirectionId)) {
 			setCircuitInOpenState(nextShuttleRequest);
 			return nextShuttleRequest;
@@ -59,7 +59,7 @@ public class ShuttleServiceImpl implements ShuttleService {
 //		nextShuttleRequest.setDirection("2");
 
 		final String actualStopId = validateAndReturnStopIdByRouteSearchString(route, direction,
-				nextShuttleRequest.getDirection(), nextShuttleRequest.getRoute(), stopName);
+				nextShuttleRequest.getDirection(), nextShuttleRequest.getRoute(), stopName, nextShuttleRequest);
 		if(NOT_AVAILABLE.equals(actualStopId)) {
 			setCircuitInOpenState(nextShuttleRequest);
 			return nextShuttleRequest;
@@ -74,7 +74,7 @@ public class ShuttleServiceImpl implements ShuttleService {
 	}
 
 	@Override
-	public String validateAndReturnRouteIdByRouteSearchString(final String routeSearchString) {
+	public String validateAndReturnRouteIdByRouteSearchString(final String routeSearchString, final NextShuttleRequest nextShuttleRequest) {
 		// get routes
 		final ResponseEntity<List<MetroRoutesResponse>> metroRoutesResponseEntity = metroTransitService.getRouteIdByRouteSearchString();
 		if(Objects.isNull(metroRoutesResponseEntity))
@@ -83,8 +83,10 @@ public class ShuttleServiceImpl implements ShuttleService {
 		Optional<MetroRoutesResponse> obj = metroRoutesResponseList.stream().filter(routeItem -> {
 			return routeItem.getDescription().contains(routeSearchString);
 		}).findFirst();
-		if (obj.isPresent())
+		if (obj.isPresent()) {
+			nextShuttleRequest.setRouteText(obj.get().getDescription());
 			return obj.get().getRoute();
+		}
 		else
 			throw new ConstraintViolationException(
 					"Route Name [[" + routeSearchString + "]] is not valid. No matching RouteId exists.", null);
@@ -92,7 +94,7 @@ public class ShuttleServiceImpl implements ShuttleService {
 
 	@Override
 	public String validateAndReturnDirectionIdByRouteAndDirectionSearchString(final String routeSearchString,
-			final String directionSearchString, final String actualRouteId) {
+			final String directionSearchString, final String actualRouteId, NextShuttleRequest nextShuttleRequest) {
 		// get directions
 		final ResponseEntity<List<TextValuePairResponse>> routeDirectionsResponseEntity = metroTransitService.getDirectionIdByRouteAndDirectionSearchString(actualRouteId);
 		if(Objects.isNull(routeDirectionsResponseEntity))
@@ -109,13 +111,14 @@ public class ShuttleServiceImpl implements ShuttleService {
 		if (CollectionUtils.isEmpty(routeDirectionsResponseList))
 			throw new ConstraintViolationException(
 					"Direction is not applicable for the Route Name [[" + routeSearchString + "]].", null);
+		nextShuttleRequest.setDirectionText(directionSearchString.toUpperCase());
 		return directionLookUp.get(directionSearchString.toUpperCase());
 	}
 	
 	@Override
 	public String validateAndReturnStopIdByRouteSearchString(final String routeSearchString,
 			final String directionSearchString, final String actualDirectionId, final String actualRouteId,
-			final String stopNameSearchString) {
+			final String stopNameSearchString, final NextShuttleRequest nextShuttleRequest) {
 		final ResponseEntity<List<TextValuePairResponse>> metroRouteStopResponseEntity = metroTransitService.getStopIdByRouteSearchString(actualDirectionId, actualRouteId);
 		if(Objects.isNull(metroRouteStopResponseEntity))
 			return NOT_AVAILABLE;
@@ -127,8 +130,10 @@ public class ShuttleServiceImpl implements ShuttleService {
 			Optional<TextValuePairResponse> obj1 = metroRouteStopResponseList.stream().filter(routeStopItem -> {
 				return routeStopItem.getText().contains(stopNameSearchString);
 			}).findFirst();
-			if (obj1.isPresent())
+			if (obj1.isPresent()) {
+				nextShuttleRequest.setStopNameText(obj1.get().getText());
 				return obj1.get().getValue();
+			}
 			else
 				throw new ConstraintViolationException("StopName is not applicable for the Route Name [["
 						+ routeSearchString + "]] and Direction [[" + directionSearchString + "]].", null);

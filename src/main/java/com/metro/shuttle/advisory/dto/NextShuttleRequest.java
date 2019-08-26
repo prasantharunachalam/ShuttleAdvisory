@@ -9,6 +9,36 @@ public class NextShuttleRequest {
 	private String stopName;
 
 	boolean isCircuitOpen;
+	
+	private String routeText;
+
+	public String getRouteText() {
+		return routeText;
+	}
+
+	public void setRouteText(String routeText) {
+		this.routeText = routeText;
+	}
+
+	public String getDirectionText() {
+		return directionText;
+	}
+
+	public void setDirectionText(String directionText) {
+		this.directionText = directionText;
+	}
+
+	public String getStopNameText() {
+		return stopNameText;
+	}
+
+	public void setStopNameText(String stopNameText) {
+		this.stopNameText = stopNameText;
+	}
+
+	private String directionText;
+
+	private String stopNameText;
 
 	public boolean isCircuitOpen() {
 		return isCircuitOpen;

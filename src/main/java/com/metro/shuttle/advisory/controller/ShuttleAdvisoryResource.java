@@ -50,6 +50,8 @@ public class ShuttleAdvisoryResource {
 		nextShuttleResponse = new NextShuttleResponse();
 		nextShuttleResponse.setDuration(metroTimePointDepartureResponse.getDepartureText(), zoneId,
 				metroTimePointDepartureResponse.getDepartureLocalDateTime());
+		nextShuttleResponse.setSearchMetadata(nextShuttleRequest);
+		
 		log.info("End getTimeDurationForNextShuttle :: {} ", nextShuttleResponse);
 		return nextShuttleResponse;
 	}

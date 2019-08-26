@@ -43,6 +43,13 @@ public class NextShuttleResponse {
 	private String arrivalTime;
 
 	private String advisoryMessage;
+	
+	private String routeName;
+	
+	private String direction;
+	
+	private String stopName;
+	
 
 	public String getDurationInMinutesForArrival() {
 		if(DUE_TIME.equalsIgnoreCase(arrivalTime))
@@ -86,6 +93,12 @@ public class NextShuttleResponse {
 			this.numberOfSeconds = this.numberOfMinutes * 60;
 		}
 		this.arrivalTime = departureText;
+	}
+	
+	public void setSearchMetadata(final NextShuttleRequest nextShuttleRequest) {
+		setRouteName(nextShuttleRequest.getRouteText());
+		setDirection(nextShuttleRequest.getDirectionText());
+		setStopName(nextShuttleRequest.getStopNameText());
 	}
 
 /*	private static LocalDateTime deserialize(String departureText) {
@@ -134,5 +147,29 @@ public class NextShuttleResponse {
 
 	public void setDurationInSecondsForArrival(String durationInSecondsForArrival) {
 		this.durationInSecondsForArrival = durationInSecondsForArrival;
+	}
+
+	public String getRouteName() {
+		return routeName;
+	}
+
+	public void setRouteName(String routeName) {
+		this.routeName = routeName;
+	}
+
+	public String getDirection() {
+		return direction;
+	}
+
+	public void setDirection(String direction) {
+		this.direction = direction;
+	}
+
+	public String getStopName() {
+		return stopName;
+	}
+
+	public void setStopName(String stopName) {
+		this.stopName = stopName;
 	}
 }
