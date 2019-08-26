@@ -67,12 +67,13 @@ public class NextShuttleResponse {
 	public long getNumberOfMinutes() {
 		return numberOfMinutes;
 	}
-
-	public static void main(String[] args) {
+	
+//Only for Testing
+/*	public static void main(String[] args) {
 //		LocalDateTime ustime = LocalDateTime.now(ZoneId.of("GMT-05:00"));
 //		System.out.println(ustime);
 		System.out.println(deserialize("/Date(1565457180000-0500)/"));
-	}
+	}*/
 
 	public void setDuration(String departureText, String zoneId, LocalDateTime departureLocalDateTime) {
 		if (departureText.contains(DELIMITER)) {
@@ -87,7 +88,7 @@ public class NextShuttleResponse {
 		this.arrivalTime = departureText;
 	}
 
-	private static LocalDateTime deserialize(String departureText) {
+/*	private static LocalDateTime deserialize(String departureText) {
 		Date result = null;
 		if (StringUtils.isNotEmpty(departureText)) {
 			final Matcher matcher = pattern.matcher(departureText);
@@ -106,10 +107,10 @@ public class NextShuttleResponse {
 			}
 		}
 		return Objects.nonNull(result)
-				? /* Date.valueOf(result.toString()).toLocalDate() */ LocalDateTime.ofInstant(result.toInstant(),
+				?  Date.valueOf(result.toString()).toLocalDate()  LocalDateTime.ofInstant(result.toInstant(),
 						ZoneId.of(US_ZONEID))
 				: null;
-	}
+	}*/
 
 	public long getNumberOfSeconds() {
 		return numberOfSeconds;
